@@ -22,9 +22,9 @@ GROUP BY dw.dwarf_id, dw.name, st.status;
 -- 5. Найдите все задачи, которые были назначены гномам из отряда с именем "Guardians".
 SELECT t.task_id, t.description, t.status
 FROM tasks t
-    JOIN dwarves dw
-        JOIN squads sqd ON dw.squad_id = sqd.squad_id AND sqd.name = 'Guardians'
-    ON t.owner_id = dw.dwarf_id
+    JOIN dwarves dw ON t.owner_id = dw.dwarf_id
+    JOIN squads sqd ON dw.squad_id = sqd.squad_id AND sqd.name = 'Guardians'
+
 
 -- 6. Выведите всех гномов и их ближайших родственников, указав тип родственных отношений.
 SELECT
@@ -38,5 +38,5 @@ SELECT
     othr.profession AS other_profession,
     rl.relationship AS relationship
 FROM relationships rl
-JOIN dwarves dw ON rl.dwarf_id = dw.dwarf_id
-JOIN dwarves othr ON rl.related_to = othr.dwarf_id
+    JOIN dwarves dw ON rl.dwarf_id = dw.dwarf_id
+    JOIN dwarves othr ON rl.related_to = othr.dwarf_id
