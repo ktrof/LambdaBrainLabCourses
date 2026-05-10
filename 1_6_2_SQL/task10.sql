@@ -19,7 +19,7 @@ craftsdwarves AS (
     SELECT wc.workshop_id,
            wc.dwarf_id,
            ds.level,
-           AVG(ds.level) OVER (PARTITION BY wc.dwarf_id) AS avg_dwarf_skill
+           AVG(ds.level) OVER (PARTITION BY wc.dwarf_id) AS avg_dwarf_skill -- Средний уровень каждого гнома.
     FROM workshop_craftsdwarves wc JOIN dwarf_skills ds ON wc.dwarf_id = ds.dwarf_id
 ),
 products AS (
@@ -28,13 +28,14 @@ products AS (
            p.value,
            wp.production_date,
            p.quality,
+           -- Предыдущая дата для мастерской. Если нет предыдущей выбирается текущая.
            LAG(wp.production_date, 1, wp.production_date) OVER(PARTITION BY wp.workshop_id ORDER BY wp.production_date) AS prev_date
     FROM workshop_products wp JOIN products p ON wp.product_id = p.product_id
 ),
 craftsdwarves_agg AS (
     SELECT workshop_id,
            COUNT(DISTINCT dwarf_id) AS num_craftsdwarves,
-           AVG(avg_dwarf_skill) AS average_craftsdwarf_skill
+           AVG(avg_dwarf_skill) AS average_craftsdwarf_skill -- Среднее между средними уровнями гномов в мастерской.
     FROM craftsdwarves
     GROUP BY wc.workshop_id
 ),
@@ -44,7 +45,7 @@ products_agg AS (
            SUM(COALESCE(quantity, 0) * COALESCE(value, 0)) AS total_production_value,
            SUM(quantity * value) / NULLIF(SUM(quantity), 0) AS avg_weighted_value,
            COALESCE(MAX(production_date) - MIN(production_date), 0) AS total_days,
-           SUM(CASE WHEN production_date - prev_date > 1 THEN 1 ELSE 0 END) AS idle_days
+           SUM(CASE WHEN production_date - prev_date > 1 THEN 1 ELSE 0 END) AS idle_days -- Дни простоя для расчета утилизации.
     FROM products
     GROUP BY workshop_id
 ),
@@ -62,7 +63,7 @@ skill_quality_agg AS (
                 SQRT(COUNT(*) * SUM(c.level * c.level) - SUM(c.level) * SUM(c.level)) *
                 SQRT(COUNT(*) * SUM(p.quality * p.quality) - SUM(p.quality) * SUM(p.quality)),
                 0
-           ) as skill_quality_pearson_r
+           ) as skill_quality_pearson_r -- Коэффициент корреляции Пирсона.
     FROM craftsdwarves c JOIN products p ON c.workshop_id = p.workshop_id
     GROUP BY c.workshop_id
 ),
