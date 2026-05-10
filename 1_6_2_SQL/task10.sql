@@ -68,19 +68,24 @@ skill_quality_agg AS (
     GROUP BY c.workshop_id
 ),
 report AS (
-    SELECT workshop_id,
-           workshop_name,
-           workshop_type,
-           num_craftsdwarves,
-           total_quantity_produced,
-           total_production_value,
-           avg_weighted_value,
-           ROUND(total_quantity_produced / NULLIF(total_days, 0), 2) AS daily_production_rate,
-           ROUND(total_production_value / NULLIF(total_quantity_consumed, 0), 2) AS value_per_material_unit,
-           ROUND((1 - CAST(idle_days AS DECIMAL) / NULLIF(total_days, 0)) * 100, 2) AS workshop_utilization_percent,
-           ROUND(total_quantity_consumed / NULLIF(total_quantity_produced, 0), 2) AS material_conversion_ratio,
-           average_craftsdwarf_skill,
-           skill_quality_pearson_r
+    SELECT w.workshop_id,
+           w.workshop_name,
+           w.workshop_type,
+           c.num_craftsdwarves,
+           p.total_quantity_produced,
+           p.total_production_value,
+           p.avg_weighted_value,
+           ROUND(p.total_quantity_produced / NULLIF(p.total_days, 0), 2) AS daily_production_rate,
+           ROUND(p.total_production_value / NULLIF(m.total_quantity_consumed, 0), 2) AS value_per_material_unit,
+           ROUND((1 - CAST(p.idle_days AS DECIMAL) / NULLIF(p.total_days, 0)) * 100, 2) AS workshop_utilization_percent,
+           ROUND(m.total_quantity_consumed / NULLIF(p.total_quantity_produced, 0), 2) AS material_conversion_ratio,
+           c.average_craftsdwarf_skill,
+           sq.skill_quality_pearson_r
+    FROM workshops w
+    LEFT JOIN craftsdwarves_agg c ON w.workshop_id = c.workshop_id
+    LEFT JOIN products_agg p ON w.workshop_id = p.workshop_id
+    LEFT JOIN materials_agg m ON w.workshop_id = m.workshop_id
+    LEFT JOIN skill_quality_agg sq ON w.workshop_id = sq.workshop_id
 )
 SELECT JSON_ARRAYAGG(JSON_OBJECT(
     KEY 'workshop_id' VALUE r.workshop_id,
