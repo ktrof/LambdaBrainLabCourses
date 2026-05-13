@@ -52,6 +52,7 @@ skill_improvements AS (
            ds.skill_id,
            ds.date,
            -- Если навык был приобретен впервые, то дельта равна уровню нового навыка (опыта в новом навыке может хватить сразу на несколько уровней).
+           -- Группирую по гному и затем навыку, чтобы не посчитать лищние навыки. Сортирую сначала по дате, а потом по уровню, если в одно время было поднято несколько уровней.
            ds.level - COALESCE(LAG(ds.level) OVER (PARTITION BY ds.dwarf_id, ds.skill_id ORDER BY ds.date, ds.level), 0) AS level_delta
     FROM dwarf_skills ds
 ),
@@ -74,7 +75,7 @@ battles AS (
     SELECT sb.squad_id,
            sb.report_id,
            sb.date,
-           LAG(sb.date) OVER (PARTITION BY squad_id ORDER BY date) as prev_date,
+           LAG(sb.date) OVER (PARTITION BY sb.squad_id ORDER BY sb.date) as prev_date,
            sb.outcome,
            sb.casualties,
            sb.enemy_casualties
